@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information and wallet balance.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "walletBalance": { "type": "number" },
+        "avatar": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "walletBalance", "role"]
+    },
+    "Order": {
+      "title": "Diamond Order",
+      "description": "Stores diamond top-up orders.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string", "description": "UID of the user who placed the order" },
+        "date": { "type": "string", "format": "date-time" },
+        "packageId": { "type": "string" },
+        "amount": { "type": "number" },
+        "quantity": { "type": "number" },
+        "playerId": { "type": "string" },
+        "playerUsername": { "type": "string" },
+        "paymentMethodId": { "type": "string" },
+        "totalPrice": { "type": "number" },
+        "amountPaid": { "type": "number" },
+        "remainingBalance": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"] },
+        "isPartial": { "type": "boolean" },
+        "proofUrl": { "type": "string" }
+      },
+      "required": ["id", "uid", "date", "packageId", "amount", "quantity", "playerId", "totalPrice", "status"]
+    },
+    "Offer": {
+      "title": "CPA Offer",
+      "description": "Stores available CPA offers for users to earn balance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "reward": { "type": "number" },
+        "type": { "type": "string" },
+        "provider": { "type": "string" }
+      },
+      "required": ["id", "title", "reward", "type", "provider"]
+    },
+    "Package": {
+      "title": "Subscription Package",
+      "description": "Stores available subscription packages.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "days": { "type": "number" }
+      },
+      "required": ["id", "name", "price", "days"]
+    },
+    "Subscription": {
+      "title": "User Subscription",
+      "description": "Stores user subscription information.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "packageId": { "type": "string" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "expired"] }
+      },
+      "required": ["id", "uid", "packageId", "endDate", "status"]
+    },
+    "Payment": {
+      "title": "Payment Transaction",
+      "description": "Stores payment transaction details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "amount": { "type": "number" },
+        "transactionId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "amount", "transactionId", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles indexed by UID."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "All orders placed on the platform."
+    },
+    "/offers/{offerId}": {
+      "schema": "Offer",
+      "description": "Available CPA offers."
+    },
+    "/packages/{packageId}": {
+      "schema": "Package",
+      "description": "Available subscription packages."
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": "Subscription",
+      "description": "User subscriptions."
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payment transactions."
+    }
+  }
+}

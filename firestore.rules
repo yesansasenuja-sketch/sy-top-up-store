@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required)
+    //   - username: string
+    //   - email: string (required)
+    //   - walletBalance: number (required)
+    //   - avatar: string
+    //   - role: string (required, ['user', 'admin'])
+    //   - createdAt: string (required, ISO 8601)
+    //
+    // Collection: orders
+    // Document ID: {orderId}
+    // Fields:
+    //   - id: string (required)
+    //   - uid: string (required)
+    //   - date: string (required, ISO 8601)
+    //   - packageId: string (required)
+    //   - amount: number (required)
+    //   - quantity: number (required)
+    //   - playerId: string (required)
+    //   - playerUsername: string
+    //   - paymentMethodId: string
+    //   - totalPrice: number (required)
+    //   - amountPaid: number
+    //   - remainingBalance: number
+    //   - status: string (required, ['pending', 'processing', 'completed', 'failed'])
+    //   - isPartial: boolean
+    //   - proofUrl: string
+    //
+    // Collection: offers
+    // Document ID: {offerId}
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required)
+    //   - reward: number (required)
+    //   - type: string (required)
+    //   - provider: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "senujayesansa123@gmail.com" && request.auth.token.email_verified == true) ||
+          (request.auth.token.email == "yesansasenuja@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'walletBalance', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.walletBalance is number &&
+             data.role in ['user', 'admin'] &&
+             (!('phoneNumber' in data) || data.phoneNumber is string) &&
+             (!('username' in data) || data.username is string) &&
+             (!('avatar' in data) || data.avatar is string) &&
+             (!('paymentDetails' in data) || data.paymentDetails is map);
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'uid', 'date', 'package', 'quantity', 'playerId', 'totalPrice', 'status']) &&
+             data.id is string &&
+             data.uid is string &&
+             data.date is string &&
+             data.package is map &&
+             data.quantity is number &&
+             data.playerId is string &&
+             data.totalPrice is number &&
+             data.status in ['pending', 'processing', 'completed', 'failed'] &&
+             (!('amountPaid' in data) || data.amountPaid is number) &&
+             (!('remainingBalance' in data) || data.remainingBalance is number) &&
+             (!('isPartial' in data) || data.isPartial is bool) &&
+             (!('playerUsername' in data) || data.playerUsername is string) &&
+             (!('paymentMethod' in data) || data.paymentMethod is map || data.paymentMethod == null);
+    }
+
+    function isValidOffer(data) {
+      return data.keys().hasAll(['id', 'title', 'reward', 'type', 'provider']) &&
+             data.id is string &&
+             data.title is string &&
+             data.reward is number &&
+             data.type is string &&
+             data.provider is string;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(uid) && request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(uid) && request.resource.data.role == resource.data.role) || isAdmin());
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data) && 
+                    (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && isValidOrder(request.resource.data) && 
+                    ((resource.data.uid == request.auth.uid && request.resource.data.uid == resource.data.uid && request.resource.data.status == resource.data.status) || isAdmin());
+    }
+
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidOffer(request.resource.data);
+    }
+
+    match /packages/{packageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /subscriptions/{subId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}
